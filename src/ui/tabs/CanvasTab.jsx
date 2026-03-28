@@ -1,3 +1,4 @@
+import { DrawCanvas } from '../draw_canvas/DrawCanvas';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Line, Html, Text, GizmoHelper, GizmoViewport, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
@@ -1011,6 +1012,7 @@ const LegendLayer = () => {
 // ----------------------------------------------------
 // Marquee Overlay
 // ----------------------------------------------------
+
 const MarqueeLayer = () => {
     const canvasMode = useStore(state => state.canvasMode);
     const setCanvasMode = useStore(state => state.setCanvasMode);
@@ -1018,6 +1020,8 @@ const MarqueeLayer = () => {
     const setMultiSelect = useStore(state => state.setMultiSelect);
     const pushHistory = useStore(state => state.pushHistory);
     const { dispatch } = useAppContext();
+    const { camera, gl } = useThree();
+
     const [startPt, setStartPt] = useState(null);
     const [currPt, setCurrPt] = useState(null);
 
@@ -1025,15 +1029,17 @@ const MarqueeLayer = () => {
     if (!isActive) return null;
 
     const handlePointerDown = (e) => {
+        // e.nativeEvent contains the actual screen coordinates
         e.stopPropagation();
-        setStartPt(e.point.clone());
-        setCurrPt(e.point.clone());
+        const pt = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+        setStartPt(pt);
+        setCurrPt(pt);
         e.target.setPointerCapture(e.pointerId);
     };
 
     const handlePointerMove = (e) => {
         if (!startPt) return;
-        setCurrPt(e.point.clone());
+        setCurrPt({ x: e.nativeEvent.clientX, y: e.nativeEvent.clientY });
     };
 
     const handlePointerUp = (e) => {
@@ -1041,17 +1047,25 @@ const MarqueeLayer = () => {
         e.stopPropagation();
         e.target.releasePointerCapture(e.pointerId);
 
-        // Compute Bounding Box
-        const minX = Math.min(startPt.x, currPt.x);
-        const maxX = Math.max(startPt.x, currPt.x);
-        const minY = Math.min(startPt.y, currPt.y) - 5000; // expand Y broadly since dragging in top-down view is usually X/Z
-        const maxY = Math.max(startPt.y, currPt.y) + 5000;
-        const minZ = Math.min(startPt.z, currPt.z);
-        const maxZ = Math.max(startPt.z, currPt.z);
-        const box = new THREE.Box3(new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, maxY, maxZ));
+        // Convert DOM coordinates to NDC for frustum/raycasting
+        const rect = gl.domElement.getBoundingClientRect();
+
+        const startNdcX = ((startPt.x - rect.left) / rect.width) * 2 - 1;
+        const startNdcY = -((startPt.y - rect.top) / rect.height) * 2 + 1;
+
+        const currNdcX = ((currPt.x - rect.left) / rect.width) * 2 - 1;
+        const currNdcY = -((currPt.y - rect.top) / rect.height) * 2 + 1;
+
+        const minX = Math.min(startNdcX, currNdcX);
+        const maxX = Math.max(startNdcX, currNdcX);
+        const minY = Math.min(startNdcY, currNdcY);
+        const maxY = Math.max(startNdcY, currNdcY);
+
+        const isCrossing = currPt.x < startPt.x;
 
         // Find intersecting elements
         const selected = [];
+
         dataTable.forEach(el => {
             if (useStore.getState().hiddenElementIds.includes(el._rowIndex)) return;
 
@@ -1059,15 +1073,17 @@ const MarqueeLayer = () => {
             if (el.ep1) pts.push(new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z));
             if (el.ep2) pts.push(new THREE.Vector3(el.ep2.x, el.ep2.y, el.ep2.z));
 
-            // If dragging Right-to-Left (Crossing):
-            // We just need any point inside box (simplification, real crossing tests segment intersection).
-            const isCrossing = currPt.x < startPt.x;
-
             let allInside = pts.length > 0;
             let anyInside = false;
 
             pts.forEach(pt => {
-                const inside = box.containsPoint(pt);
+                // Project 3D point to 2D screen NDC
+                const projected = pt.clone().project(camera);
+
+                const inside = (projected.x >= minX && projected.x <= maxX &&
+                                projected.y >= minY && projected.y <= maxY &&
+                                projected.z >= -1 && projected.z <= 1); // Ensure it's not behind camera
+
                 if (!inside) allInside = false;
                 if (inside) anyInside = true;
             });
@@ -1088,8 +1104,6 @@ const MarqueeLayer = () => {
                 const rowIndices = selected.map(e => e._rowIndex);
                 dispatch({ type: 'DELETE_ELEMENTS', payload: { rowIndices } });
 
-                // Update Zustand directly to avoid relying on full table replacement here if we can help it,
-                // but Context should sync.
                 const updatedTable = useStore.getState().dataTable.filter(r => !rowIndices.includes(r._rowIndex));
                 useStore.getState().setDataTable(updatedTable);
 
@@ -1102,53 +1116,50 @@ const MarqueeLayer = () => {
         setCanvasMode('VIEW');
     };
 
+    const isCrossing = currPt && startPt && currPt.x < startPt.x;
+
+    const style = startPt && currPt ? {
+        position: 'absolute',
+        left: Math.min(startPt.x, currPt.x),
+        top: Math.min(startPt.y, currPt.y),
+        width: Math.abs(currPt.x - startPt.x),
+        height: Math.abs(currPt.y - startPt.y),
+        backgroundColor: canvasMode === 'MARQUEE_ZOOM'
+            ? 'rgba(249, 115, 22, 0.15)'
+            : (isCrossing ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)'),
+        border: canvasMode === 'MARQUEE_ZOOM'
+            ? '2px dashed #f97316'
+            : `2px solid ${isCrossing ? '#10b981' : '#3b82f6'}`,
+        pointerEvents: 'none',
+        zIndex: 100
+    } : {};
+
     return (
         <group>
-            {/*
-              Fix WebGL Context Loss:
-              Instead of a massive 500,000x500,000 physical mesh plane that can cause extreme
-              clipping/precision errors in the depth buffer, we use a global full-screen
-              overlay handler that relies on the generic ThreeJS raycaster via pointer events,
-              but attached to an invisible, screen-filling background mesh.
-              Because we don't strictly need a plane, we can just attach these events
-              to a simple infinite bounding volume or rely on `Canvas` global events.
-              However, for localized intercept, a small plane scaled up works best if depthTest=false
-              and renderOrder is low. Let's use a smaller base size and scale it.
-            */}
+            {/* Invisible plane for catching pointer events */}
             <mesh
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, Math.max(startPt?.y || 0, 0) + 1, 0]}
-                scale={[2000, 2000, 1]}
+                position={[0, 0, 0]}
+                scale={[200000, 200000, 1]}
                 renderOrder={-1}
             >
-                <planeGeometry args={[500, 500]} />
-                <meshBasicMaterial visible={false} depthTest={false} />
+                <planeGeometry args={[1, 1]} />
+                <meshBasicMaterial visible={false} depthTest={false} depthWrite={false} />
             </mesh>
 
-            {/* Marquee Visuals */}
+            {/* Render 2D HTML Marquee Overlay */}
             {startPt && currPt && (
-                <Line
-                    points={[
-                        new THREE.Vector3(startPt.x, startPt.y, startPt.z),
-                        new THREE.Vector3(currPt.x, startPt.y, startPt.z),
-                        new THREE.Vector3(currPt.x, startPt.y, currPt.z),
-                        new THREE.Vector3(startPt.x, startPt.y, currPt.z),
-                        new THREE.Vector3(startPt.x, startPt.y, startPt.z),
-                    ]}
-                    color={currPt.x < startPt.x ? "#10b981" : "#3b82f6"} // Green for crossing, Blue for window
-                    lineWidth={3}
-                    depthTest={false}
-                />
+                <Html style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none' }} zIndexRange={[100, 0]}>
+                    <div style={style} />
+                </Html>
             )}
         </group>
     );
 };
 
-// ----------------------------------------------------
-// Measure Tool
 // ----------------------------------------------------
 const MeasureTool = () => {
     const measurePts = useStore(state => state.measurePts);
@@ -2405,6 +2416,9 @@ export function CanvasTab() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-950 rounded-lg border border-slate-800 shadow-inner relative mt-[-2rem]">
+      {canvasMode === 'DRAW_CANVAS' && (
+          <DrawCanvas />
+      )}
 
       {/* New UI Overlays */}
       <SceneHealthHUD />
