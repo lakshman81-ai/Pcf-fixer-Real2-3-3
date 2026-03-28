@@ -1,37 +1,35 @@
 const { test, expect } = require('@playwright/test');
 
-test('Check Rendering After CA Fix', async ({ page }) => {
+test('Check Draw Canvas button', async ({ page }) => {
   await page.goto('http://localhost:5173');
+  await page.waitForTimeout(2000);
+
+  // In the App.jsx we saw "3D Topology New" button
+  // <button onClick={() => setActiveTab('canvas')}
+  const tabs = await page.locator('button');
+  for (let i = 0; i < await tabs.count(); i++) {
+     const text = await tabs.nth(i).textContent();
+     if (text && text.includes('3D Topology')) {
+        await tabs.nth(i).click();
+        break;
+     }
+  }
 
   await page.waitForTimeout(2000);
 
-  // Try to click either "3D Topology" or "3D Topology New"
-  try {
-    await page.click('text=3D Topology New', { timeout: 2000 });
-  } catch(e) {
-    try {
-      await page.click('text=3D Topology', { timeout: 2000 });
-    } catch(e) {}
+  // The Draw Canvas button is labeled 'Draw Canvas' in the toolbar ribbon
+  // Try to click it directly
+  const buttons = await page.locator('button');
+  for (let i = 0; i < await buttons.count(); i++) {
+     const text = await buttons.nth(i).textContent();
+     if (text && text.includes('Draw Canvas')) {
+        await buttons.nth(i).click();
+        break;
+     }
   }
 
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 
-  // The new UI uses the Ribbon Toolbar for View settings
-  try {
-    await page.click('button:has-text("VIEW")', { timeout: 2000 });
-    await page.waitForTimeout(500);
-
-    // Look for the color select combobox
-    const selects = page.locator('select');
-    if (await selects.count() > 0) {
-      // Find the one that has "By Type" or similar
-      const select = selects.filter({ hasText: 'By Type' });
-      if (await select.count() > 0) {
-         await select.first().selectOption({ label: 'By Spool' }); // Just select something else to verify it works
-      }
-    }
-  } catch(e) {}
-
-  await page.waitForTimeout(1000);
-  await page.screenshot({ path: 'playwright-toolbar4.png' });
+  // Take a screenshot to verify it opened
+  await page.screenshot({ path: 'playwright-drawcanvas.png' });
 });

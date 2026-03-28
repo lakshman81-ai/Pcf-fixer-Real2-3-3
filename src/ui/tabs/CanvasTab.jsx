@@ -15,6 +15,7 @@ import { SupportPropertyPanel } from '../components/SupportPropertyPanel';
 import { GapSidebar } from '../components/GapSidebar';
 import { PipelinePropertyPanel } from '../components/PipelinePropertyPanel';
 import { NavigationPanel } from '../components/NavigationPanel';
+import DrawCanvas from '../draw_canvas/DrawCanvas';
 import { SettingsModal } from '../components/SettingsModal';
 import { ClippingPlanesLayer, ClippingPanelUI } from '../components/ClippingPlanesLayer';
 import { ToolbarRibbon } from '../components/ToolbarRibbon';
