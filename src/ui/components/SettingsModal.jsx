@@ -25,6 +25,56 @@ export const SettingsModal = () => {
 
         {/* Body */}
         <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                        {/* Performance Settings */}
+            <div>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">Performance & Graphics</h3>
+
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <div className="text-sm font-medium text-slate-200">Pixel Ratio Limit</div>
+                            <div className="text-xs text-slate-400">Reduce resolution on high-DPI screens to boost FPS</div>
+                        </div>
+                        <select
+                            value={appSettings.pixelRatioLimit || 1.5}
+                            onChange={(e) => updateAppSettings({ pixelRatioLimit: parseFloat(e.target.value) })}
+                            className="bg-slate-950 text-slate-200 text-sm p-2 w-24 rounded border border-slate-700 focus:border-blue-500 outline-none"
+                        >
+                            <option value={1}>1.0x (Fast)</option>
+                            <option value={1.5}>1.5x (Balanced)</option>
+                            <option value={2}>2.0x (High Qty)</option>
+                        </select>
+                    </div>
+
+                    <label className="flex justify-between items-center cursor-pointer group">
+                        <div>
+                            <div className="text-sm font-medium text-slate-200 group-hover:text-blue-400 transition-colors">Anti-Aliasing (MSAA)</div>
+                            <div className="text-xs text-slate-400">Smooth edges (costs GPU memory)</div>
+                        </div>
+                        <div className="relative">
+                            <input type="checkbox" className="sr-only" checked={appSettings.msaaEnabled !== false} onChange={(e) => updateAppSettings({ msaaEnabled: e.target.checked })} />
+                            <div className={`block w-10 h-6 rounded-full transition-colors ${appSettings.msaaEnabled !== false ? 'bg-blue-600' : 'bg-slate-700'}`}></div>
+                            <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${appSettings.msaaEnabled !== false ? 'translate-x-4' : ''}`}></div>
+                        </div>
+                    </label>
+
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <div className="text-sm font-medium text-slate-200">Label Culling Distance</div>
+                            <div className="text-xs text-slate-400">Hide text labels when camera is far away</div>
+                        </div>
+                        <input
+                            type="number"
+                            min="1000"
+                            step="1000"
+                            value={appSettings.labelCullingDistance || 20000}
+                            onChange={(e) => updateAppSettings({ labelCullingDistance: parseInt(e.target.value) || 20000 })}
+                            className="bg-slate-950 text-slate-200 text-sm p-2 w-24 rounded border border-slate-700 text-right focus:border-blue-500 outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+
             {/* Interaction Settings */}
             <div>
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">Interaction & View</h3>

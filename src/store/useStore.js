@@ -160,6 +160,9 @@ export const useStore = create((set, get) => ({
     centerOrbitOnSelect: true,
     showGrid: true,
     showAxes: true,
+    pixelRatioLimit: 1.5,
+    msaaEnabled: true,
+    labelCullingDistance: 20000,
     componentColors: {
       PIPE: '#cbd5e1',     // Light slate (subtle)
       BEND: '#94a3b8',     // Slate (subtle contrast)

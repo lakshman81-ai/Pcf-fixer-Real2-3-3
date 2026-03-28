@@ -23,11 +23,8 @@ const DrawnGeometry = () => {
     return (
         <group>
             {elements.map((el, idx) => {
-                if (!el.ep1) return null;
-                const vecA = new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z);
-                const r = el.bore ? el.bore / 2 : 50;
-
-                if (el.type === 'PIPE' && el.ep2) {
+                if (el.type === 'PIPE' && el.ep1 && el.ep2) {
+                    const vecA = new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z);
                     const vecB = new THREE.Vector3(el.ep2.x, el.ep2.y, el.ep2.z);
                     const dist = vecA.distanceTo(vecB);
                     if (dist < 0.1) return null;
@@ -36,51 +33,12 @@ const DrawnGeometry = () => {
                     const dir = vecB.clone().sub(vecA).normalize();
                     const up = new THREE.Vector3(0, 1, 0);
                     const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
+                    const r = el.bore ? el.bore / 2 : 50;
 
                     return (
                         <mesh key={el._id || idx} position={mid} quaternion={quat}>
                             <cylinderGeometry args={[r, r, dist, 16]} />
                             <meshStandardMaterial color="#cbd5e1" />
-                        </mesh>
-                    );
-                }
-                if (el.type === 'BEND') {
-                    return (
-                        <mesh key={el._id || idx} position={vecA}>
-                            <sphereGeometry args={[r * 1.5, 16, 16]} />
-                            <meshStandardMaterial color="#94a3b8" />
-                        </mesh>
-                    );
-                }
-                if (el.type === 'TEE') {
-                    return (
-                        <mesh key={el._id || idx} position={vecA}>
-                            <boxGeometry args={[r * 3, r * 3, r * 3]} />
-                            <meshStandardMaterial color="#94a3b8" />
-                        </mesh>
-                    );
-                }
-                if (el.type === 'VALVE') {
-                    return (
-                        <mesh key={el._id || idx} position={vecA}>
-                            <boxGeometry args={[r * 2.2, r * 4, r * 2.2]} />
-                            <meshStandardMaterial color="#3b82f6" />
-                        </mesh>
-                    );
-                }
-                if (el.type === 'FLANGE') {
-                    return (
-                        <mesh key={el._id || idx} position={vecA}>
-                            <cylinderGeometry args={[r * 1.6, r * 1.6, 20, 24]} />
-                            <meshStandardMaterial color="#60a5fa" />
-                        </mesh>
-                    );
-                }
-                if (el.type === 'SUPPORT') {
-                    return (
-                        <mesh key={el._id || idx} position={vecA}>
-                            <cylinderGeometry args={[r * 0.5, r * 0.5, 200, 8]} />
-                            <meshStandardMaterial color="#10b981" />
                         </mesh>
                     );
                 }
@@ -93,13 +51,8 @@ const DrawnGeometry = () => {
 const DrawToolLayer = () => {
     const activeTool = useDrawStore(state => state.activeTool);
     const addDrawnElement = useDrawStore(state => state.addDrawnElement);
-    const removeDrawnElement = useDrawStore(state => state.removeDrawnElement);
-    const updateDrawnElement = useDrawStore(state => state.updateDrawnElement);
     const gridSnap = useDrawStore(state => state.gridSnap);
     const res = useDrawStore(state => state.snapResolution);
-    const drawnElements = useDrawStore(state => state.drawnElements);
-    const selectedIds = useDrawStore(state => state.selectedIds);
-    const setSelectedIds = useDrawStore(state => state.setSelectedIds);
 
     const [startPt, setStartPt] = useState(null);
     const [cursorPt, setCursorPt] = useState(new THREE.Vector3());
@@ -108,8 +61,7 @@ const DrawToolLayer = () => {
     const [inputPos, setInputPos] = useState({ x: 0, y: 0 });
     const [inputValue, setInputValue] = useState('');
 
-    // If orbit, do not render capture plane
-    if (activeTool === 'ORBIT') return null;
+    if (activeTool !== 'DRAW_PIPE') return null;
 
     const getSnappedPt = (pt) => {
         const p = pt.clone();
@@ -126,7 +78,7 @@ const DrawToolLayer = () => {
         const pt = getSnappedPt(e.point);
         setCursorPt(pt);
 
-        if (startPt && activeTool === 'DRAW_PIPE') {
+        if (startPt) {
             setShowInput(true);
             const dist = startPt.distanceTo(pt);
             if (document.activeElement?.id !== 'draw-length-input') {
@@ -139,78 +91,17 @@ const DrawToolLayer = () => {
         e.stopPropagation();
         const pt = getSnappedPt(e.point);
 
-        if (activeTool === 'DRAW_PIPE') {
-            if (!startPt) {
-                setStartPt(pt);
-            } else {
-                addDrawnElement({
-                    type: 'PIPE',
-                    ep1: { x: startPt.x, y: startPt.y, z: startPt.z },
-                    ep2: { x: pt.x, y: pt.y, z: pt.z },
-                    bore: 100
-                });
-                setStartPt(pt.clone());
-                setShowInput(false);
-            }
-        } else if (activeTool === 'DRAW_BEND') {
-             addDrawnElement({ type: 'BEND', ep1: { x: pt.x, y: pt.y, z: pt.z }, bore: 100 });
-        } else if (activeTool === 'DRAW_TEE') {
-             addDrawnElement({ type: 'TEE', ep1: { x: pt.x, y: pt.y, z: pt.z }, bore: 100 });
-        } else if (activeTool === 'INSERT_VALVE') {
-             addDrawnElement({ type: 'VALVE', ep1: { x: pt.x, y: pt.y, z: pt.z }, bore: 100 });
-        } else if (activeTool === 'INSERT_FLANGE') {
-             addDrawnElement({ type: 'FLANGE', ep1: { x: pt.x, y: pt.y, z: pt.z }, bore: 100 });
-        } else if (activeTool === 'INSERT_SUPPORT') {
-             addDrawnElement({ type: 'SUPPORT', ep1: { x: pt.x, y: pt.y, z: pt.z }, bore: 100 });
-        } else if (activeTool === 'SELECT') {
-             // Basic distance-based selection
-             let nearestId = null;
-             let minDist = 100;
-             drawnElements.forEach(el => {
-                 if (el.ep1) {
-                     const d1 = pt.distanceTo(new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z));
-                     if (d1 < minDist) { minDist = d1; nearestId = el._id; }
-                 }
-                 if (el.ep2) {
-                     const d2 = pt.distanceTo(new THREE.Vector3(el.ep2.x, el.ep2.y, el.ep2.z));
-                     if (d2 < minDist) { minDist = d2; nearestId = el._id; }
-                 }
-             });
-
-             if (nearestId) {
-                 setSelectedIds([nearestId]);
-             } else {
-                 setSelectedIds([]);
-             }
-        } else if (activeTool === 'DELETE') {
-             let nearestId = null;
-             let minDist = 100;
-             drawnElements.forEach(el => {
-                 if (el.ep1) {
-                     const d1 = pt.distanceTo(new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z));
-                     if (d1 < minDist) { minDist = d1; nearestId = el._id; }
-                 }
-             });
-             if (nearestId) removeDrawnElement(nearestId);
-        } else if (activeTool === 'MOVE') {
-             if (selectedIds.length > 0) {
-                 const id = selectedIds[0];
-                 const el = drawnElements.find(e => e._id === id);
-                 if (el) {
-                     // Very simple move to cursor
-                     if (el.ep1 && el.ep2) {
-                         const v1 = new THREE.Vector3(el.ep1.x, el.ep1.y, el.ep1.z);
-                         const v2 = new THREE.Vector3(el.ep2.x, el.ep2.y, el.ep2.z);
-                         const delta = v2.sub(v1);
-                         updateDrawnElement(id, {
-                             ep1: { x: pt.x, y: pt.y, z: pt.z },
-                             ep2: { x: pt.x + delta.x, y: pt.y + delta.y, z: pt.z + delta.z }
-                         });
-                     } else {
-                         updateDrawnElement(id, { ep1: { x: pt.x, y: pt.y, z: pt.z } });
-                     }
-                 }
-             }
+        if (!startPt) {
+            setStartPt(pt);
+        } else {
+            addDrawnElement({
+                type: 'PIPE',
+                ep1: { x: startPt.x, y: startPt.y, z: startPt.z },
+                ep2: { x: pt.x, y: pt.y, z: pt.z },
+                bore: 100
+            });
+            setStartPt(pt.clone());
+            setShowInput(false);
         }
     };
 
@@ -233,7 +124,7 @@ const DrawToolLayer = () => {
                 <meshBasicMaterial visible={false} depthTest={false} depthWrite={false} />
             </mesh>
 
-            {startPt && activeTool === 'DRAW_PIPE' && (
+            {startPt && (
                 <line>
                     <bufferGeometry>
                         <float32BufferAttribute attach="attributes-position" count={2} array={new Float32Array([
@@ -245,14 +136,12 @@ const DrawToolLayer = () => {
                 </line>
             )}
 
-            {activeTool !== 'SELECT' && activeTool !== 'DELETE' && (
-                <mesh position={cursorPt}>
-                    <sphereGeometry args={[20, 16, 16]} />
-                    <meshBasicMaterial color="#eab308" transparent opacity={0.6} depthTest={false} />
-                </mesh>
-            )}
+            <mesh position={cursorPt}>
+                <sphereGeometry args={[20, 16, 16]} />
+                <meshBasicMaterial color="#eab308" transparent opacity={0.6} depthTest={false} />
+            </mesh>
 
-            {showInput && activeTool === 'DRAW_PIPE' && (
+            {showInput && (
                 <Html position={cursorPt} zIndexRange={[100, 0]}>
                     <div className="bg-slate-900 border border-slate-700 shadow p-1 rounded flex items-center gap-2 pointer-events-auto -mt-10 ml-5">
                         <span className="text-xs text-slate-400">Len:</span>

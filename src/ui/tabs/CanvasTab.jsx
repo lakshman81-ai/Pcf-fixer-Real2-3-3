@@ -1,4 +1,3 @@
-import { DrawCanvas } from '../draw_canvas/DrawCanvas';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Line, Html, Text, GizmoHelper, GizmoViewport, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
@@ -2416,9 +2415,6 @@ export function CanvasTab() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-950 rounded-lg border border-slate-800 shadow-inner relative mt-[-2rem]">
-      {canvasMode === 'DRAW_CANVAS' && (
-          <DrawCanvas />
-      )}
 
       {/* New UI Overlays */}
       <SceneHealthHUD />
