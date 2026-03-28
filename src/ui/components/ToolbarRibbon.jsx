@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAppContext } from '../../store/AppContext';
+import { FolderOpen, Pencil, FileText, Zap, Pointer, Move, Maximize, ZoomIn, Box, Grid, SquareDashedMousePointer, Search, Trash2, Camera, Compass, PenTool } from 'lucide-react';
 
 const ToolGroup = ({ title, shortTitle, children }) => {
     const [collapsed, setCollapsed] = useState(false);
@@ -43,41 +44,34 @@ const ToolBtn = ({ active, onClick, title, children, color = 'slate' }) => {
     );
 };
 
-const TextBtn = ({ onClick, title, label, color = 'slate' }) => {
+const TextBtn = ({ onClick, title, label, icon: Icon, color = 'slate' }) => {
     const colors = {
         slate: "bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600",
         orange: "bg-orange-900/50 hover:bg-orange-800 text-orange-400 border-orange-800",
         red: "bg-red-900/50 hover:bg-red-800 text-red-400 border-red-800",
         blue: "bg-blue-900/50 hover:bg-blue-800 text-blue-400 border-blue-800",
+        emerald: "bg-emerald-900/50 hover:bg-emerald-800 text-emerald-400 border-emerald-800",
     };
     return (
-        <button onClick={onClick} className={`px-2 py-1 text-[11px] font-medium rounded border transition ${colors[color]}`} title={title}>
+        <button onClick={onClick} className={`px-2 py-1 text-[11px] font-medium rounded border transition flex items-center gap-1 ${colors[color]}`} title={title}>
+            {Icon && <Icon className="w-3 h-3" />}
             {label}
         </button>
     );
 };
 
 export function ToolbarRibbon({ onFix6mm, onFix25mm, onAutoRef, onAutoCenter, onToggleSideInspector, showSideInspector, onPointerDown }) {
-    // This is a stub, replaced by ToolbarRibbon1 and 2
-    return null;
-}
+    const [activeTab, setActiveTab] = useState('TOOLS');
 
-export function ToolbarRibbon1({ onAutoCenter, onToggleSideInspector, showSideInspector, onPointerDown }) {
-    const { canvasMode, setCanvasMode, orthoMode, toggleOrthoMode, multiSelectedIds, translucentMode, setTranslucentMode } = useStore();
+    const { canvasMode, setCanvasMode, orthoMode, toggleOrthoMode, multiSelectedIds, translucentMode, setTranslucentMode, colorMode, setColorMode } = useStore();
     const { dispatch } = useAppContext();
 
-    const handleHide = () => {
-        useStore.getState().hideSelected();
-    };
-
-    const handleIsolate = () => {
-        useStore.getState().isolateSelected();
-    };
+    const handleHide = () => useStore.getState().hideSelected();
+    const handleIsolate = () => useStore.getState().isolateSelected();
 
     const handleDelete = () => {
         const { multiSelectedIds, selectedElementId, pushHistory, deleteElements } = useStore.getState();
         const idsToDelete = multiSelectedIds.length > 0 ? multiSelectedIds : (selectedElementId ? [selectedElementId] : []);
-
         if (idsToDelete.length > 0) {
             if (window.confirm(`Delete ${idsToDelete.length} elements?`)) {
                 pushHistory('Delete from Ribbon');
@@ -87,186 +81,171 @@ export function ToolbarRibbon1({ onAutoCenter, onToggleSideInspector, showSideIn
         }
     };
 
-    const handleResetView = () => {
-        useStore.getState().setHiddenElementIds([]);
-        window.dispatchEvent(new CustomEvent('canvas-reset-view'));
-    };
-
-    const handleUndo = () => {
-        useStore.getState().undo();
-    };
+    const handleUndo = () => useStore.getState().undo();
 
     return (
-        <div className={`z-40 bg-slate-900/95 backdrop-blur border border-slate-700 rounded shadow-xl flex flex-col pointer-events-auto`}>
-            <div className={`flex items-start px-2 py-2 gap-2 overflow-x-auto custom-scrollbar`}>
-                <div
-                    className="flex flex-col items-center justify-center gap-1 h-full cursor-move pr-2 border-r border-slate-700/50 hover:bg-slate-800 rounded p-1 transition-colors self-center"
-                    title="Drag to move toolbar"
-                    onPointerDown={onPointerDown}
-                >
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
+        <div className="z-40 bg-slate-900/95 backdrop-blur border border-slate-700 rounded shadow-xl flex flex-col pointer-events-auto"
+             style={{ width: 'fit-content', minWidth: '400px' }}>
+
+            {/* Quick Access / Top Row */}
+            <div className="flex items-center justify-between px-2 bg-slate-800/80 border-b border-slate-700 cursor-move" onPointerDown={onPointerDown}>
+                <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
+                    <button onClick={() => setActiveTab('FILE')} className={`px-3 py-1 text-xs font-semibold ${activeTab === 'FILE' ? 'text-white border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}>FILE</button>
+                    <button onClick={() => setActiveTab('ANALYSIS')} className={`px-3 py-1 text-xs font-semibold ${activeTab === 'ANALYSIS' ? 'text-white border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}>ANALYSIS</button>
+                    <button onClick={() => setActiveTab('VIEW')} className={`px-3 py-1 text-xs font-semibold ${activeTab === 'VIEW' ? 'text-white border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}>VIEW</button>
+                    <button onClick={() => setActiveTab('TOOLS')} className={`px-3 py-1 text-xs font-semibold ${activeTab === 'TOOLS' ? 'text-white border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}>TOOLS</button>
+                    <button onClick={() => setActiveTab('EXPORT')} className={`px-3 py-1 text-xs font-semibold ${activeTab === 'EXPORT' ? 'text-white border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}>EXPORT</button>
                 </div>
 
-                <ToolGroup title="Config" shortTitle="CFG">
-                    <ToolBtn onClick={() => useStore.getState().setShowSettings(true)} title="Settings">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    </ToolBtn>
-                    <ToolBtn onClick={handleUndo} title="Undo (Ctrl+Z)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={useStore.getState().showSideInspector} onClick={() => useStore.getState().setShowSideInspector(!useStore.getState().showSideInspector)} title="Toggle Side Panel">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-                    </ToolBtn>
-                </ToolGroup>
+                {/* QAT */}
+                <div className="flex items-center gap-2 pr-1" onPointerDown={(e) => e.stopPropagation()}>
+                    <TextBtn onClick={() => setCanvasMode('DRAW_CANVAS')} color="emerald" label="Draw Canvas" icon={PenTool} title="Open Draw Canvas" />
+                    <button className="text-slate-400 hover:text-white" title="Minimize Ribbon">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                </div>
+            </div>
 
+            {/* Tab Contents */}
+            <div className="flex items-start px-2 py-2 gap-2 overflow-x-auto custom-scrollbar" onPointerDown={(e) => e.stopPropagation()}>
 
-                <ToolGroup title="View" shortTitle="VIEW">
-                    <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-set-view', { detail: { viewType: 'HOME' } }))} title="Home / Reset View">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    </ToolBtn>
-                    <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-auto-center'))} title="Zoom to Fit">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14v4a2 2 0 0 0 2 2h4"/><path d="M20 10V6a2 2 0 0 0-2-2h-4"/><path d="M14 20h4a2 2 0 0 0 2-2v-4"/><path d="M4 10V6a2 2 0 0 1 2-2h4"/><circle cx="12" cy="12" r="2"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={!useStore.getState().orthoMode} onClick={() => useStore.getState().toggleOrthoMode()} color="blue" title="Toggle Perspective / Orthographic (O)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    </ToolBtn>
-                    <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
-                    <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-save-camera', { detail: { preset: 'A' } }))} title="Save Camera Preset A">
-                        <div className="font-bold text-[10px]">S-A</div>
-                    </ToolBtn>
-                    <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-load-camera', { detail: { preset: 'A' } }))} title="Load Camera Preset A">
-                        <div className="font-bold text-[10px]">L-A</div>
-                    </ToolBtn>
+                {activeTab === 'FILE' && (
+                    <>
+                        <ToolGroup title="Config" shortTitle="CFG">
+                            <ToolBtn onClick={() => useStore.getState().setShowSettings(true)} title="Settings">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            </ToolBtn>
+                        </ToolGroup>
+                    </>
+                )}
 
-                </ToolGroup>
+                {activeTab === 'ANALYSIS' && (
+                    <>
+                        <ToolGroup title="Auto Fixes" shortTitle="FIX">
+                            <div className="flex gap-2">
+                                <TextBtn onClick={onFix6mm} color="orange" label="Fix 6mm" icon={Zap} title="Auto-close all gaps <= 6mm" />
+                                <TextBtn onClick={onFix25mm} color="red" label="Fix 25mm" icon={Zap} title="Insert pipe spool for gaps 6-25mm" />
+                                <TextBtn onClick={onAutoRef} color="blue" label="Auto Pipe Ref" icon={Pencil} title="Auto-assign Pipeline Refs to blank components on branch" />
+                            </div>
+                        </ToolGroup>
+                        <ToolGroup title="Check" shortTitle="CHK">
+                            <ToolBtn active={useStore.getState().showGapRadar} onClick={() => useStore.getState().setShowGapRadar(!useStore.getState().showGapRadar)} color="amber" title="Toggle Gap Radar">
+                                <Search className="w-4 h-4" />
+                            </ToolBtn>
+                        </ToolGroup>
+                    </>
+                )}
 
+                {activeTab === 'VIEW' && (
+                    <>
+                        <ToolGroup title="Navigate" shortTitle="NAV">
+                            <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-set-view', { detail: { viewType: 'HOME' } }))} title="Fit All (F)">
+                                <Maximize className="w-4 h-4" />
+                            </ToolBtn>
+                            <ToolBtn onClick={() => window.dispatchEvent(new CustomEvent('canvas-auto-center'))} title="Zoom Selected (Z)">
+                                <ZoomIn className="w-4 h-4" />
+                            </ToolBtn>
+                            <ToolBtn active={!useStore.getState().orthoMode} onClick={() => useStore.getState().toggleOrthoMode()} color="blue" title="Toggle Perspective / Orthographic (O)">
+                                <Box className="w-4 h-4" />
+                            </ToolBtn>
+                            <ToolBtn active={useStore.getState().clippingPlaneEnabled} onClick={() => useStore.getState().setClippingPlaneEnabled(!useStore.getState().clippingPlaneEnabled)} color="slate" title="Toggle Section Box">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M3 3h18v18H3z"/></svg>
+                            </ToolBtn>
+                        </ToolGroup>
 
-                <ToolGroup title="Visibility" shortTitle="VIS">
-                    <ToolBtn active={useStore.getState().hiddenElementIds.length > 0} onClick={() => useStore.getState().unhideAll()} color="emerald" title="Show All Components (U)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={false} onClick={() => useStore.getState().isolateSelected()} color="amber" title="Isolate Selected (H)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12H3"/><path d="M12 21V3"/></svg>
-                    </ToolBtn>
-                    <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
-                    <ToolBtn active={useStore.getState().translucentMode} onClick={() => useStore.getState().setTranslucentMode(!useStore.getState().translucentMode)} color="blue" title="Toggle Translucent View">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
-                    </ToolBtn>
-                </ToolGroup>
+                        <ToolGroup title="Visibility" shortTitle="VIS">
+                            <ToolBtn active={useStore.getState().hiddenElementIds.length > 0} onClick={() => useStore.getState().unhideAll()} color="emerald" title="Show All Components (U)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </ToolBtn>
+                            <ToolBtn active={false} onClick={handleIsolate} color="amber" title="Isolate Selected (H)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12H3"/><path d="M12 21V3"/></svg>
+                            </ToolBtn>
+                            <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
+                            <ToolBtn active={useStore.getState().translucentMode} onClick={() => useStore.getState().setTranslucentMode(!useStore.getState().translucentMode)} color="blue" title="Toggle Translucent View">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                            </ToolBtn>
+                        </ToolGroup>
 
-                <ToolGroup title="Labels" shortTitle="LBL">
-                    <ToolBtn active={useStore.getState().showRowLabels} onClick={() => useStore.getState().setShowRowLabels(!useStore.getState().showRowLabels)} title="Toggle Row No. (R)">
-                        <div className="font-bold text-xs">R</div>
-                    </ToolBtn>
-                    <ToolBtn active={useStore.getState().showRefLabels} onClick={() => useStore.getState().setShowRefLabels(!useStore.getState().showRefLabels)} title="Toggle Ref No.">
-                        <div className="font-bold text-[10px]">Ref</div>
-                    </ToolBtn>
-                    <ToolBtn active={useStore.getState().showGapRadar} onClick={() => useStore.getState().setShowGapRadar(!useStore.getState().showGapRadar)} color="amber" title="Toggle Gap Radar">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
-                        </svg>
-                    </ToolBtn>
-                </ToolGroup>
+                        <ToolGroup title="Labels & Colors" shortTitle="LBL">
+                            <ToolBtn active={useStore.getState().showRowLabels} onClick={() => useStore.getState().setShowRowLabels(!useStore.getState().showRowLabels)} title="Toggle Labels (L)">
+                                <div className="font-bold text-xs">L</div>
+                            </ToolBtn>
+                            <ToolBtn active={useStore.getState().showRefLabels} onClick={() => useStore.getState().setShowRefLabels(!useStore.getState().showRefLabels)} title="Toggle Ref No.">
+                                <div className="font-bold text-[10px]">Ref</div>
+                            </ToolBtn>
+                            <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
+                            <select
+                                value={colorMode}
+                                onChange={(e) => setColorMode(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        setColorMode('');
+                                        e.target.blur();
+                                    }
+                                }}
+                                className="h-7 bg-slate-700 text-slate-300 text-[11px] rounded border border-slate-600 px-2 outline-none focus:border-indigo-500 cursor-pointer w-24"
+                            >
+                                <option value="">Colors</option>
+                                <option value="TYPE">By Type</option>
+                                <option value="SPOOL">By Spool</option>
+                                <option value="PIPELINE_REF">By Pipe Ref</option>
+                                <option value="ERROR">By Error</option>
+                            </select>
+                        </ToolGroup>
+                    </>
+                )}
 
-                <ToolGroup title="Select / Modify" shortTitle="SEL">
-                    <ToolBtn active={canvasMode === 'MARQUEE_SELECT'} onClick={() => setCanvasMode(canvasMode === 'MARQUEE_SELECT' ? 'VIEW' : 'MARQUEE_SELECT')} color="blue" title="Marquee Select">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeDasharray="4 4" /></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'MARQUEE_ZOOM'} onClick={() => setCanvasMode(canvasMode === 'MARQUEE_ZOOM' ? 'VIEW' : 'MARQUEE_ZOOM')} color="indigo" title="Marquee Zoom">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><rect x="8" y="8" width="6" height="6" strokeDasharray="2 2"/></svg>
-                    </ToolBtn>
-                    <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
-                    <ToolBtn active={canvasMode === 'MARQUEE_DELETE'} onClick={() => setCanvasMode(canvasMode === 'MARQUEE_DELETE' ? 'VIEW' : 'MARQUEE_DELETE')} color="red" title="Box Delete">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeDasharray="4 4"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
-                    </ToolBtn>
-                    <ToolBtn onClick={handleDelete} color="red" title="Delete Selected (Del)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </ToolBtn>
-                </ToolGroup>
+                {activeTab === 'TOOLS' && (
+                    <>
+                        <ToolGroup title="Select" shortTitle="SEL">
+                            <ToolBtn active={canvasMode === 'MARQUEE_SELECT'} onClick={() => setCanvasMode(canvasMode === 'MARQUEE_SELECT' ? 'VIEW' : 'MARQUEE_SELECT')} color="blue" title="Box Select (B)">
+                                <SquareDashedMousePointer className="w-4 h-4" />
+                            </ToolBtn>
+                            <ToolBtn active={canvasMode === 'MARQUEE_ZOOM'} onClick={() => setCanvasMode(canvasMode === 'MARQUEE_ZOOM' ? 'VIEW' : 'MARQUEE_ZOOM')} color="indigo" title="Box Zoom (Shift+B)">
+                                <ZoomIn className="w-4 h-4" />
+                            </ToolBtn>
+                        </ToolGroup>
 
-                <ToolGroup title="Edit Modes" shortTitle="EDIT">
-                    <ToolBtn active={canvasMode === 'CONNECT'} onClick={() => setCanvasMode(canvasMode === 'CONNECT' ? 'VIEW' : 'CONNECT')} color="amber" title="Connect (C)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'STRETCH'} onClick={() => setCanvasMode(canvasMode === 'STRETCH' ? 'VIEW' : 'STRETCH')} color="emerald" title="Stretch (T)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M15 16l4-4-4-4"/><path d="M9 8l-4 4 4 4"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'BREAK'} onClick={() => setCanvasMode(canvasMode === 'BREAK' ? 'VIEW' : 'BREAK')} color="red" title="Break (B)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'MEASURE'} onClick={() => setCanvasMode(canvasMode === 'MEASURE' ? 'VIEW' : 'MEASURE')} color="amber" title="Measure (M)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 1 0 2.829 2.828z"/><path d="m6.3 14.5-4 4"/><path d="m16 5.3-4 4"/></svg>
-                    </ToolBtn>
-                    <div className="w-px h-6 bg-slate-700 mx-1 self-center"></div>
-                    <ToolBtn active={useStore.getState().clippingPlaneEnabled} onClick={() => useStore.getState().setClippingPlaneEnabled(!useStore.getState().clippingPlaneEnabled)} color="slate" title="Toggle Section Box">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M3 3h18v18H3z"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'INSERT_SUPPORT'} onClick={() => setCanvasMode(canvasMode === 'INSERT_SUPPORT' ? 'VIEW' : 'INSERT_SUPPORT')} color="emerald" title="Insert Support (I)">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22V8"/><path d="M8 8h8"/><path d="M12 8l-3 -6h6z"/></svg>
-                    </ToolBtn>
-                    <ToolBtn active={canvasMode === 'ASSIGN_PIPELINE'} onClick={() => setCanvasMode(canvasMode === 'ASSIGN_PIPELINE' ? 'VIEW' : 'ASSIGN_PIPELINE')} color="blue" title="Assign Pipeline Ref">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    </ToolBtn>
-                </ToolGroup>
+                        <ToolGroup title="Modify" shortTitle="MOD">
+                            <ToolBtn active={canvasMode === 'CONNECT'} onClick={() => setCanvasMode(canvasMode === 'CONNECT' ? 'VIEW' : 'CONNECT')} color="amber" title="Connect (C)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            </ToolBtn>
+                            <ToolBtn active={canvasMode === 'STRETCH'} onClick={() => setCanvasMode(canvasMode === 'STRETCH' ? 'VIEW' : 'STRETCH')} color="emerald" title="Stretch (T)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M15 16l4-4-4-4"/><path d="M9 8l-4 4 4 4"/></svg>
+                            </ToolBtn>
+                            <ToolBtn active={canvasMode === 'BREAK'} onClick={() => setCanvasMode(canvasMode === 'BREAK' ? 'VIEW' : 'BREAK')} color="red" title="Break (B)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                            </ToolBtn>
+                            <ToolBtn active={canvasMode === 'INSERT_SUPPORT'} onClick={() => setCanvasMode(canvasMode === 'INSERT_SUPPORT' ? 'VIEW' : 'INSERT_SUPPORT')} color="emerald" title="Insert Support (I)">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22V8"/><path d="M8 8h8"/><path d="M12 8l-3 -6h6z"/></svg>
+                            </ToolBtn>
+                            <ToolBtn onClick={handleDelete} color="red" title="Delete Selected (Del)">
+                                <Trash2 className="w-4 h-4" />
+                            </ToolBtn>
+                        </ToolGroup>
+
+                        <ToolGroup title="Measure" shortTitle="MEAS">
+                            <ToolBtn active={canvasMode === 'MEASURE'} onClick={() => setCanvasMode(canvasMode === 'MEASURE' ? 'VIEW' : 'MEASURE')} color="amber" title="Measure (M)">
+                                <Compass className="w-4 h-4" />
+                            </ToolBtn>
+                        </ToolGroup>
+                    </>
+                )}
+
+                {activeTab === 'EXPORT' && (
+                    <>
+                        <ToolGroup title="Export" shortTitle="EXP">
+                            <TextBtn onClick={() => alert("PCF Export logic here")} color="slate" label="PCF" icon={FileText} title="Export PCF" />
+                            <TextBtn onClick={() => alert("CSV Export logic here")} color="slate" label="CSV" icon={Grid} title="Export CSV" />
+                            <TextBtn onClick={() => alert("PNG Export logic here")} color="slate" label="PNG" icon={Camera} title="Export PNG" />
+                        </ToolGroup>
+                    </>
+                )}
+
             </div>
         </div>
     );
 }
 
-export function ToolbarRibbon2({ onFix6mm, onFix25mm, onAutoRef, onPointerDown }) {
-    const { colorMode, setColorMode } = useStore();
-
-    return (
-        <div className={`z-40 bg-slate-900/95 backdrop-blur border border-slate-700 rounded shadow-xl flex flex-col pointer-events-auto`}>
-            <div className={`flex items-start px-2 py-2 gap-2 overflow-x-auto custom-scrollbar`}>
-                <div
-                    className="flex flex-col items-center justify-center gap-1 h-full cursor-move pr-2 border-r border-slate-700/50 hover:bg-slate-800 rounded p-1 transition-colors self-center"
-                    title="Drag to move toolbar"
-                    onPointerDown={onPointerDown}
-                >
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
-                    <div className="w-1 h-1 bg-slate-500 rounded-full pointer-events-none"></div>
-                </div>
-
-                <ToolGroup title="Auto Fixes" shortTitle="FIX">
-                    <div className="flex gap-2">
-                        <TextBtn onClick={onFix6mm} color="orange" label="Fix 6mm" title="Auto-close all gaps ≤ 6mm" />
-                        <TextBtn onClick={onFix25mm} color="red" label="Fix 25mm" title="Insert pipe spool for gaps 6-25mm" />
-                        <TextBtn onClick={onAutoRef} color="blue" label="Auto Pipe Ref" title="Auto-assign Pipeline Refs to blank components on branch" />
-                    </div>
-                </ToolGroup>
-
-                <ToolGroup title="Shading" shortTitle="SHADE">
-                    <select
-                        value={colorMode}
-                        onChange={(e) => setColorMode(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                                setColorMode('');
-                                e.target.blur();
-                            }
-                        }}
-                        className="h-7 bg-slate-700 text-slate-300 text-[11px] rounded border border-slate-600 px-2 outline-none focus:border-indigo-500 cursor-pointer w-32"
-                    >
-                        <option value="">None (Default)</option>
-                        <option value="TYPE">Color by Type</option>
-                        <option value="SPOOL">Color by Spool</option>
-                        <option value="PIPELINE_REF">Color by Pipeline Ref</option>
-                        <option value="ERROR">Color by Error</option>
-                        <option value="LINENO_KEY">Color by LineNo Key</option>
-                        <option value="RATING">Color by Rating</option>
-                        <option value="PIPING_CLASS">Color by Piping Class</option>
-                        {[97,98,1,2,3,4,5,6,7,8,9,10].map(n => (
-                            <option key={`ca${n}`} value={`CA${n}`}>Color by CA{n}</option>
-                        ))}
-                    </select>
-                </ToolGroup>
-            </div>
-        </div>
-    );
-}
+export function ToolbarRibbon1(props) { return null; }
+export function ToolbarRibbon2(props) { return null; }

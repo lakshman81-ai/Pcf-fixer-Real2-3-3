@@ -49,3 +49,5 @@
 [Implementation Pending/Improvements Identified for future]: None.
 
 
+[28-03-2026/10:00] [Task 18] [3D UI Enhancements & Draw Canvas Scaffold] [Refactored ToolbarRibbon.jsx to a tabbed UI using Lucide-react. Implemented a custom 3D HTML View Cube in CanvasTab. Scaffolded a new Draw Canvas feature with its own Zustand store (`useDrawStore`) and implemented the `DRAW_PIPE` tool with interactive geometry creation and an inline measurement HUD.] [Updated modules: ToolbarRibbon.jsx, CanvasTab.jsx, DrawCanvas.jsx, store.js] [Record: Tested locally with Playwright benchmark] []
+[Implementation Pending/Improvements Identified for future]: Complete the remaining "Draw Canvas" features (Properties Panel, Component List, other drawing tools).
