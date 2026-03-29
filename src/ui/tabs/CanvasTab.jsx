@@ -1,3 +1,4 @@
+import { DrawCanvas } from '../draw_canvas/DrawCanvas';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Line, Html, Text, GizmoHelper, GizmoViewport, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
@@ -15,7 +16,6 @@ import { SupportPropertyPanel } from '../components/SupportPropertyPanel';
 import { GapSidebar } from '../components/GapSidebar';
 import { PipelinePropertyPanel } from '../components/PipelinePropertyPanel';
 import { NavigationPanel } from '../components/NavigationPanel';
-import { DrawCanvas } from '../draw_canvas/DrawCanvas';
 import { SettingsModal } from '../components/SettingsModal';
 import { ClippingPlanesLayer, ClippingPanelUI } from '../components/ClippingPlanesLayer';
 import { ToolbarRibbon } from '../components/ToolbarRibbon';
@@ -2414,8 +2414,16 @@ export function CanvasTab() {
   };
 
 
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-950 rounded-lg border border-slate-800 shadow-inner relative mt-[-2rem]">
+      {canvasMode === 'DRAW_CANVAS' ? (
+          <div className="absolute inset-0 z-50 bg-slate-900">
+              <DrawCanvas onClose={() => setCanvasMode('VIEW')} />
+          </div>
+      ) : (
+        <>
+
 
       {/* New UI Overlays */}
       <SceneHealthHUD />
@@ -2563,6 +2571,9 @@ export function CanvasTab() {
         <gridHelper args={[20000, 20, '#1e293b', '#0f172a']} position={[0, -1000, 0]} />
       </Canvas>
 
+
+        </>
+      )}
     </div>
   );
 }
