@@ -1,3 +1,4 @@
+import DebugConsole from './ui/components/DebugConsole';
 import React, { useState, useEffect } from 'react';
 import { Header } from './ui/components/Header';
 import { StatusBar } from './ui/components/StatusBar';
